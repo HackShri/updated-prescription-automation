@@ -4,6 +4,9 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+
 
 router.post('/signup', async (req, res) => {
   const { name, email, password, role, secretCode, age, weight, height } = req.body;
@@ -26,6 +29,7 @@ router.post('/signup', async (req, res) => {
       age,
       weight,
       height,
+      photo: '', // Default empty photo
       verified: role === 'patient' || role === 'admin', // Patients/admins are auto-verified
     });
 
@@ -65,5 +69,31 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+router.post('/upload-photo', upload.single('photo'), async (req, res) => {
+  try{
+    const {email} = req.body;
+
+    const user = await User.findOne({ email});
+    if (!user || user.role !=='patient'){
+      return res.status(404).json({
+        message: 'Patient not found'
+      })
+    }
+    const photoBase64 = req.file.buffer.toString('base64');
+    user.photo = `data:${req.file.mimetype};base64,${photoBase64}`;
+    await user.save();
+
+    res.json({
+      message: 'Photo uploaded successfully',
+      
+    })
+  }catch(error){
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message
+    })
+  }
+})
 
 module.exports = router;

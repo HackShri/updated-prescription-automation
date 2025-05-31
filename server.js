@@ -24,7 +24,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
+app.use(express.urlencoded({ extended: true }));
 
 // Connect to MongoDB"
 connectDB();
@@ -58,7 +58,7 @@ io.on('connection', (socket) => {
     io.to(patientId).emit('receivePrescription', prescription);
   });
 });
-
+app.set('io', io);
 // Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

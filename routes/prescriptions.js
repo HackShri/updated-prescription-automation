@@ -34,8 +34,13 @@ router.post('/', authMiddleware, roleMiddleware('doctor'), async (req, res) => {
       usageLimit,
       expiresAt,
       doctorSignature,
+      patientPhoto: patient.photo || '',
     });
     await prescription.save();
+
+    const io = req.app.get('io');
+    io.to(patientEmail).emit('recievePrescription', prescription)
+
     res.status(201).json({ _id: prescription._id, patientId: patient._id });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });

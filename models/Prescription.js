@@ -13,6 +13,7 @@ const prescriptionSchema = new mongoose.Schema({
   used: { type: Number, default: 0 },
   expiresAt: { type: Date, required: true },
   doctorSignature: { type: String, required: true },
+  patientPhoto: { type: String, default:'' ,required: true },
   createdAt: { type: Date, default: Date.now },
 });
 

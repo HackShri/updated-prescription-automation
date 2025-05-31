@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   age: { type: Number }, // For patients
   weight: { type: Number }, // For patients
   height: { type: Number },
+  photo: {type:String, default:''},
   verified: { type: Boolean, default: false},
   createdAt: { type: Date, default: Date.now },
 });
