@@ -33,6 +33,8 @@ connectDB();
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/prescriptions', require('./routes/prescriptions'));
+app.use('/api/pill-schedule', require('./routes/pillSchedule'));
+app.use('/api/chat', require('./routes/chatbot'));
 
 
 

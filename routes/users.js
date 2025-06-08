@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const authMiddleware = require('../middleware/auth');
-const roleMiddleware = require('../middleware/role');
+const authMiddleware = require('../middleware/authMiddleware');
+const roleMiddleware = require('../middleware/roleMiddleware');
 
 router.get('/', authMiddleware, roleMiddleware('admin'), async (req, res) => {
   try {

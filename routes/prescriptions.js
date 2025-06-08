@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Prescription = require('../models/Prescription');
 const User = require('../models/User');
-const authMiddleware = require('../middleware/auth');
-const roleMiddleware = require('../middleware/role');
+const authMiddleware = require('../middleware/authMiddleware');
+const roleMiddleware = require('../middleware/roleMiddleware');
 
 router.post('/', authMiddleware, roleMiddleware('doctor'), async (req, res) => {
   const {
