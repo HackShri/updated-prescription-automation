@@ -50,7 +50,7 @@ const io = new Server(server, {
 
 // ✅ Socket.IO handlers
 io.on('connection', (socket) => {
-  console.log('Socket connected:', socket.id);
+  //console.log('Socket connected:', socket.id);
 
   socket.on('joinRoom', (userId) => {
     socket.join(userId);

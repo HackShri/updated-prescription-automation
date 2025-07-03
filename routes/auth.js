@@ -9,11 +9,26 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/signup', async (req, res) => {
-  const { name, email, password, role, secretCode, age, weight, height } = req.body;
+  const { name, email, mobile, password, role, secretCode, age, weight, height } = req.body;
   try {
-    let user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({ message: 'User already exists' });
+    // Validate that at least one of email or mobile is provided
+    if (!email && !mobile) {
+      return res.status(400).json({ message: 'Either email or mobile number is required' });
+    }
+
+    // Check if user exists with the provided email or mobile
+    let existingUser = null;
+    if (email) {
+      existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: 'User with this email already exists' });
+      }
+    }
+    if (mobile) {
+      existingUser = await User.findOne({ mobile });
+      if (existingUser) {
+        return res.status(400).json({ message: 'User with this mobile number already exists' });
+      }
     }
 
     if (role === 'admin' && secretCode !== process.env.ADMIN_SECRET_CODE) {
@@ -21,9 +36,10 @@ router.post('/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    user = new User({
+    const user = new User({
       name,
-      email,
+      email: email || null,
+      mobile: mobile || null,
       password: hashedPassword,
       role,
       age,
@@ -40,14 +56,24 @@ router.post('/signup', async (req, res) => {
     });
     res.status(201).json({ token });
   } catch (err) {
+    if (err.message === 'Either email or mobile number is required') {
+      return res.status(400).json({ message: err.message });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { emailOrMobile, password } = req.body;
   try {
-    const user = await User.findOne({ email });
+    // Find user by either email or mobile number
+    const user = await User.findOne({
+      $or: [
+        { email: emailOrMobile },
+        { mobile: emailOrMobile }
+      ]
+    });
+    
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
