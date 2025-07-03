@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Prescription = require('../models/Prescription');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 
@@ -38,8 +39,23 @@ router.post('/', authMiddleware, roleMiddleware('doctor'), async (req, res) => {
     });
     await prescription.save();
 
+    // Create notification for patient
+    await Notification.create({
+      user: patient._id,
+      type: 'prescription',
+      message: 'A new prescription has been issued to you.',
+      meta: { prescriptionId: prescription._id }
+    });
+
+    // Emit socket event to patient (if using socket.io rooms by userId)
     const io = req.app.get('io');
-    io.to(patientEmail).emit('recievePrescription', prescription)
+    if (io) {
+      io.to(String(patient._id)).emit('notification', {
+        type: 'prescription',
+        message: 'A new prescription has been issued to you.',
+        prescriptionId: prescription._id
+      });
+    }
 
     res.status(201).json({ _id: prescription._id, patientId: patient._id });
   } catch (err) {

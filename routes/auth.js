@@ -4,6 +4,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const authMiddleware = require('../middleware/authMiddleware');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
@@ -50,6 +51,30 @@ router.post('/signup', async (req, res) => {
     });
 
     await user.save();
+
+    // Notify all admins if a new doctor or pharmacist signs up
+    if (role === 'doctor' || role === 'pharmacist') {
+      const admins = await User.find({ role: 'admin' });
+      const notifications = admins.map(admin => ({
+        user: admin._id,
+        type: 'admin-join',
+        message: `A new ${role} has joined: ${name}`,
+        meta: { userId: user._id, name }
+      }));
+      await Notification.insertMany(notifications);
+      // Emit socket event to all admins
+      const io = req.app.get('io');
+      if (io) {
+        admins.forEach(admin => {
+          io.to(String(admin._id)).emit('notification', {
+            type: 'admin-join',
+            message: `A new ${role} has joined: ${name}`,
+            userId: user._id,
+            name
+          });
+        });
+      }
+    }
 
     const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, {
       expiresIn: '1d',
@@ -128,6 +153,18 @@ router.get('/me', authMiddleware, async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Fetch notifications for the logged-in user
+router.get('/notifications', authMiddleware, async (req, res) => {
+  try {
+    const notifications = await Notification.find({ user: req.user.userId })
+      .sort({ createdAt: -1 })
+      .limit(50);
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
